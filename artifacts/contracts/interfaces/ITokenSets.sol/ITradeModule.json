@@ -1,0 +1,67 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ITradeModule",
+  "sourceName": "contracts/interfaces/ITokenSets.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_setToken",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_setToken",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_exchangeName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "_sendToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_sendQuantity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_receiveToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_minReceiveQuantity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "trade",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
