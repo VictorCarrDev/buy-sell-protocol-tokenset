@@ -7,7 +7,7 @@ const {
 const { solidity } = require("ethereum-waffle");
 const { expect } = chai;
 chai.use(solidity);
-const { toWei, ZERO_ADDRESS } = require("../test/utils");
+const { fromWei, toWei, ZERO_ADDRESS } = require("../test/utils");
 
 // Addresses
 const SET_CREATOR_ADDRESS = "0x14f0321be5e581abF9d5BC76260bf015Dc04C53d";
@@ -24,7 +24,9 @@ const BONUS_RATE_MAP = [1, 10000]; //  100%
 
 describe("Set Protocol", () => {
   before(async function () {
-    ({ manager } = await getNamedAccounts());
+    ({ manager, alice, bob } = await getNamedAccounts());
+    aliceSigner = await ethers.provider.getSigner(alice);
+    bobSigner = await ethers.provider.getSigner(bob);
 
     setCreator = await ethers.getContractAt(
       "ISetTokenCreator",
@@ -43,7 +45,7 @@ describe("Set Protocol", () => {
     console.log("\nCreating Set Token...");
     const tx = await setCreator.create(
       [WBTC_ADDRESS, WETH_ADDRESS],
-      [0.0015e8, toWei("0.03846")], // around $100 per set token
+      [0.000227e8, toWei("0.00315")], // around $20 per set token
       [BASIC_ISSUANCE_MODULE, TRADE_MODULE],
       manager,
       "ETHBTC Set",
@@ -64,34 +66,31 @@ describe("Set Protocol", () => {
     console.log("Trade Module Initialized!");
   });
 
-  it.only("should deploy protocol contract", async function () {
+  it("should deploy protocol contract", async function () {
     Protocol = await ethers.getContractFactory("Protocol");
-    await Protocol.deploy(setAddress, LEVEL_RATE, BONUS_RATE_MAP);
+    protocol = await Protocol.deploy(setAddress, LEVEL_RATE, BONUS_RATE_MAP);
   });
 
-  // it("should buy 1 set Token using ETH", async function () {
-  //   await protocol.buySetWithETH(toWei(1), REFERRER, {
-  //     from: USER,
-  //     value: toWei(2),
-  //   });
+  it("should buy 1 set Token using ETH", async function () {
+    await protocol.connect(aliceSigner).buySetWithETH(toWei(1), bob, {
+      value: toWei(100),
+    });
 
-  //   const balance = await setToken.balanceOf(USER);
-  //   assert.equal(balance, toWei(1));
-  // });
+    const balance = await setToken.balanceOf(alice);
+    expect(fromWei(balance)).equal(1);
+  });
 
-  // it("should get correct referree rewards", async function () {
-  //   const { referrer, reward, referredCount } = await protocol.accounts(USER);
-  //   expect(referrer).equal(REFERRER);
-  //   expect(reward).equal(0);
-  //   expect(referredCount).equal(0);
-  // });
+  it("should get correct referree rewards", async function () {
+    const { referrer, reward, referredCount } = await protocol.accounts(alice);
+    expect(referrer).equal(bob);
+    expect(reward).equal(0);
+    expect(referredCount).equal(0);
+  });
 
-  // it("should get correct referrer rewards", async function () {
-  //   const { referrer, reward, referredCount } = await protocol.accounts(
-  //     REFERRER
-  //   );
-  //   expect(referrer).equal(ZERO_ADDRESS);
-  //   expect(String(reward)).equal(String(new BN(toWei(1)).div(new BN("100")))); // 1% of 1 token
-  //   expect(referredCount).equal(1);
-  // });
+  it("should get correct referrer rewards", async function () {
+    const { referrer, reward, referredCount } = await protocol.accounts(bob);
+    expect(referrer).equal(ZERO_ADDRESS);
+    expect(fromWei(reward)).equal(0.01); // 1% of 1 token
+    expect(referredCount).equal(1);
+  });
 });

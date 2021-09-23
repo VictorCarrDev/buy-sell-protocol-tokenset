@@ -102,11 +102,20 @@ contract Protocol is Referral {
       ? getBalance(fromToken, address(this))
       : amount;
 
+    IERC20 fromTokenReal = isETH(fromToken) ? weth : fromToken;
+    IERC20 toTokenReal = isETH(destToken) ? weth : destToken;
+
+    // console.log("swapping", address(fromToken), address(destToken), amount);
+
     if (isETH(fromToken)) {
       weth.deposit{ value: realAmt }();
     }
 
     address[] memory path = new address[](2);
+    path[0] = address(fromTokenReal);
+    path[1] = address(toTokenReal);
+
+    fromTokenReal.safeApprove(address(router), realAmt);
 
     router.swapExactTokensForTokens(
       realAmt,
@@ -149,7 +158,7 @@ contract Protocol is Referral {
     payable
     updateReferrer(amount, _referrer)
   {
-    require(msg.value > 0);
+    require(msg.value > 0, "!MATIC");
 
     (
       address[] memory componentAddresses,
@@ -163,10 +172,11 @@ contract Protocol is Referral {
 
     // Swap ETH to required component quantities
     for (uint256 i = 0; i < componentAddresses.length; i++) {
+      // If already in ETH, only wrap
       if (componentAddresses[i] == address(weth)) {
         weth.deposit{ value: componentQuantities[i] }();
       }
-      // If its not ETH address
+      // If its not ETH address, buy token
       else if (!isETH(IERC20(componentAddresses[i]))) {
         uint256 ethToSwap = getAmountIn(
           IERC20(ETH_ADDRESS),
