@@ -6,6 +6,12 @@ const TRADE_MODULE = "0xd04AabadEd11e92Fefcd92eEdbBC81b184CdAc82";
 
 const WETH_ADDRESS = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270";
 const WBTC_ADDRESS = "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6";
+const USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+
+
+const LEVEL_RATE = [1000, 500]; //  Level 1 - 10%, Level 2 - 5%
+const BONUS_RATE_MAP = [1, 10000]; //  100%
+
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { manager } = await getNamedAccounts();
@@ -42,6 +48,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   // Initialize Trade Module
   await tradeModule.initialize(setAddress);
   console.log("Trade Module Initialized!");
+
+  Protocol = await ethers.getContractFactory("Protocol");
+  protocol = await Protocol.deploy(setAddress, LEVEL_RATE, BONUS_RATE_MAP);
+  console.log(protocol.address)
+
 };
 
 module.exports.tags = ["SetToken"];

@@ -82,7 +82,7 @@ contract Referral is Ownable {
     bool _onlyRewardActiveReferrers,
     uint256[] memory _levelRate,
     uint256[] memory _refereeBonusRateMap
-  ) public {
+  ) {
     require(_levelRate.length > 0, "Referral level should be at least one");
     require(
       _levelRate.length <= MAX_REFER_DEPTH,

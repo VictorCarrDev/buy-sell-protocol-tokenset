@@ -105,9 +105,9 @@ contract Protocol is Referral {
     IERC20 fromTokenReal = isETH(fromToken) ? weth : fromToken;
     IERC20 toTokenReal = isETH(destToken) ? weth : destToken;
 
-    // console.log("swapping", address(fromToken), address(destToken), amount);
 
     if (isETH(fromToken)) {
+      require(msg.value >= realAmt, "not enough tokens send");
       weth.deposit{ value: realAmt }();
     }
 
@@ -183,6 +183,7 @@ contract Protocol is Referral {
           IERC20(componentAddresses[i]),
           componentQuantities[i]
         );
+        console.log(ethToSwap, "this is the amount");
         swap(IERC20(ETH_ADDRESS), IERC20(componentAddresses[i]), ethToSwap);
       }
 
@@ -197,5 +198,36 @@ contract Protocol is Referral {
 
     // Issue set Tokens
     basicModule.issue(setToken, amount, msg.sender);
+  }
+
+  function costSetWithETH(uint256 amount) external view returns (uint256) {
+    (
+      address[] memory componentAddresses,
+      uint256[] memory componentQuantities
+    ) = basicModule.getRequiredComponentUnitsForIssue(setToken, amount);
+
+    uint256 totalOut = 0;
+
+    // Swap ETH to required component quantities
+    for (uint256 i = 0; i < componentAddresses.length; i++) {
+      // If already in ETH, only wrap
+      if (componentAddresses[i] == address(weth)) {
+        totalOut += componentQuantities[i];
+      }
+      // If its not ETH address, buy token
+      else if (!isETH(IERC20(componentAddresses[i]))) {
+        uint256 ethToSwap = getAmountIn(
+          IERC20(ETH_ADDRESS),
+          IERC20(componentAddresses[i]),
+          componentQuantities[i]
+        );
+        console.log(ethToSwap, "this is the amount");
+        totalOut += ethToSwap;
+      }
+    }
+
+    totalOut = (totalOut * 105) / 100;
+
+    return totalOut;
   }
 }

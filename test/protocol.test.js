@@ -72,9 +72,16 @@ describe("Set Protocol", () => {
   });
 
   it("should buy 1 set Token using ETH", async function () {
-    await protocol.connect(aliceSigner).buySetWithETH(toWei(1), bob, {
-      value: toWei(100),
+    
+    const trans = await protocol.connect(aliceSigner).buySetWithETH(toWei(1), bob, {
+      value: toWei(60),
     });
+    
+    console.log((await ethers.provider.getBalance(protocol.address)).toString() , 'balance of protocol ')
+
+    
+
+    // console.log(trans)
 
     const balance = await setToken.balanceOf(alice);
     expect(fromWei(balance)).equal(1);
