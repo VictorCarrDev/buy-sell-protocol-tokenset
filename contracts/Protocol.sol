@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import { ISetToken, IBasicIssuanceModule, ISetValuer } from "./interfaces/ITokenSets.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IUniswapV2Router.sol";
+import {IUniswapV2Router02 } from "./interfaces/IUniswapV2Router.sol";
 import "./interfaces/IWETH.sol";
 import "./Referral.sol";
 import "hardhat/console.sol";
@@ -20,8 +20,8 @@ contract Protocol is Referral {
   address public setToken;
 
   // Quickswap Router
-  IUniswapV2Router router =
-    IUniswapV2Router(0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff);
+  IUniswapV2Router02 router =
+    IUniswapV2Router02(0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff);
 
   // Wrapped Matic
   IWETH internal constant weth =
@@ -96,34 +96,38 @@ contract Protocol is Referral {
   function swap(
     IERC20 fromToken,
     IERC20 destToken,
-    uint256 amount
+    uint256 amount,
+    uint neededAmountOut
   ) internal {
+
+
     uint256 realAmt = amount == type(uint256).max
       ? getBalance(fromToken, address(this))
       : amount;
 
     IERC20 fromTokenReal = isETH(fromToken) ? weth : fromToken;
-    IERC20 toTokenReal = isETH(destToken) ? weth : destToken;
+    // IERC20 toTokenReal = isETH(destToken) ? weth : destToken;
 
-
+      require(msg.value >= realAmt, "not enough tokens to swap");
     if (isETH(fromToken)) {
-      require(msg.value >= realAmt, "not enough tokens send");
       weth.deposit{ value: realAmt }();
     }
 
     address[] memory path = new address[](2);
     path[0] = address(fromTokenReal);
-    path[1] = address(toTokenReal);
+    path[1] = address(destToken);
 
     fromTokenReal.safeApprove(address(router), realAmt);
 
-    router.swapExactTokensForTokens(
-      realAmt,
-      1,
-      path,
-      address(this),
-      block.timestamp + 1
-    );
+    router.swapTokensForExactTokens(neededAmountOut,(amount * 105) / 100, path, address(this), block.timestamp + 5);
+
+    // router.swapExactTokensForTokens(
+    //   realAmt,
+    //   1,
+    //   path,
+    //   address(this),
+    //   block.timestamp + 1
+    // );
 
     if (isETH(destToken)) {
       weth.withdraw(weth.balanceOf(address(this)));
@@ -184,7 +188,7 @@ contract Protocol is Referral {
           componentQuantities[i]
         );
         console.log(ethToSwap, "this is the amount");
-        swap(IERC20(ETH_ADDRESS), IERC20(componentAddresses[i]), ethToSwap);
+        swap(IERC20(ETH_ADDRESS), IERC20(componentAddresses[i]), ethToSwap, componentQuantities[i]);
       }
 
       IERC20(componentAddresses[i]).safeApprove(
@@ -198,6 +202,7 @@ contract Protocol is Referral {
 
     // Issue set Tokens
     basicModule.issue(setToken, amount, msg.sender);
+    payable(msg.sender).transfer(address(this).balance);
   }
 
   function costSetWithETH(uint256 amount) external view returns (uint256) {
