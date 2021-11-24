@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import { ISetToken, IBasicIssuanceModule, ISetValuer } from "./interfaces/ITokenSets.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IUniswapV2Router02 } from "./interfaces/IUniswapV2Router.sol";
+import { IUniswapV2Router02 } from "./interfaces/IUniswapV2Router.sol";
 import "./interfaces/IWETH.sol";
 import "./Referral.sol";
 import "hardhat/console.sol";
@@ -97,18 +97,16 @@ contract Protocol is Referral {
     IERC20 fromToken,
     IERC20 destToken,
     uint256 amount,
-    uint neededAmountOut
+    uint256 neededAmountOut
   ) internal {
-
-
     uint256 realAmt = amount == type(uint256).max
       ? getBalance(fromToken, address(this))
       : amount;
 
     IERC20 fromTokenReal = isETH(fromToken) ? weth : fromToken;
-    // IERC20 toTokenReal = isETH(destToken) ? weth : destToken;
 
-      require(msg.value >= realAmt, "not enough tokens to swap");
+    require(msg.value >= realAmt, "not enough tokens to swap");
+    require(!isETH(destToken), "Destiny token should not be ETH");
     if (isETH(fromToken)) {
       weth.deposit{ value: realAmt }();
     }
@@ -117,19 +115,45 @@ contract Protocol is Referral {
     path[0] = address(fromTokenReal);
     path[1] = address(destToken);
 
-    fromTokenReal.safeApprove(address(router), realAmt);
+    fromTokenReal.safeApprove(address(router), (realAmt * 105) / 100);
 
-    router.swapTokensForExactTokens(neededAmountOut,(amount * 105) / 100, path, address(this), block.timestamp + 5);
+    router.swapTokensForExactTokens(
+      neededAmountOut,
+      (realAmt * 105) / 100,
+      path,
+      address(this),
+      block.timestamp + 5
+    );
+  }
 
-    // router.swapExactTokensForTokens(
-    //   realAmt,
-    //   1,
-    //   path,
-    //   address(this),
-    //   block.timestamp + 1
-    // );
+  function swapTokenToETH(IERC20 fromToken, uint256 amount) internal {
+    uint256 realAmt = amount == type(uint256).max
+      ? getBalance(fromToken, address(this))
+      : amount;
 
-    if (isETH(destToken)) {
+    IERC20 fromTokenReal = isETH(fromToken) ? weth : fromToken;
+    IWETH toTokenReal = weth;
+
+    if (isETH(fromToken)) {
+      weth.deposit{ value: realAmt }();
+    }
+
+    address[] memory path = new address[](2);
+    path[0] = address(fromTokenReal);
+    path[1] = address(toTokenReal);
+
+    if (fromToken == weth) {
+      weth.withdraw(weth.balanceOf(address(this)));
+    } else {
+      console.log('this is the moneyy, well the address', realAmt,address(fromToken));
+      fromToken.approve(address(router), realAmt);
+      router.swapExactTokensForTokens(
+        realAmt,
+        1,
+        path,
+        address(this),
+        block.timestamp + 1
+      );
       weth.withdraw(weth.balanceOf(address(this)));
     }
   }
@@ -169,11 +193,6 @@ contract Protocol is Referral {
       uint256[] memory componentQuantities
     ) = basicModule.getRequiredComponentUnitsForIssue(setToken, amount);
 
-    // console.log("Component1", componentAddresses[0]);
-    // console.log("Component2", componentAddresses[1]);
-    // console.log("Amount1", componentQuantities[0]);
-    // console.log("Amount2", componentQuantities[1]);
-
     // Swap ETH to required component quantities
     for (uint256 i = 0; i < componentAddresses.length; i++) {
       // If already in ETH, only wrap
@@ -187,8 +206,13 @@ contract Protocol is Referral {
           IERC20(componentAddresses[i]),
           componentQuantities[i]
         );
-        console.log(ethToSwap, "this is the amount");
-        swap(IERC20(ETH_ADDRESS), IERC20(componentAddresses[i]), ethToSwap, componentQuantities[i]);
+        // console.log(ethToSwap, "this is the amount");
+        swap(
+          IERC20(ETH_ADDRESS),
+          IERC20(componentAddresses[i]),
+          ethToSwap,
+          componentQuantities[i]
+        );
       }
 
       IERC20(componentAddresses[i]).safeApprove(
@@ -235,4 +259,38 @@ contract Protocol is Referral {
 
     return totalOut;
   }
+
+  function SellSetForETH(uint256 amount) external returns (uint256) {
+
+    console.log(IERC20(setToken).allowance(msg.sender, address(this)), 'this is the allowance');
+
+    require(amount <= IERC20(setToken).allowance(msg.sender, address(this)), 
+    'not aproved to sell');
+
+    IERC20(setToken).transferFrom(msg.sender, address(this), amount);
+    basicModule.redeem(setToken, amount, address(this));
+
+
+    (
+      address[] memory componentAddresses,
+      uint256[] memory componentQuantities
+    ) = basicModule.getRequiredComponentUnitsForIssue(setToken, amount);
+
+
+    // Swap ETH to required component quantities
+    for (uint256 i = 0; i < componentAddresses.length; i++) {
+      
+      swapTokenToETH(IERC20(componentAddresses[i]),componentQuantities[i]);
+    }
+
+    uint toReturn = address(this).balance;
+    payable(msg.sender).transfer(toReturn);
+
+    return toReturn;
+
+  }
+
+  receive() payable external {}
+
+
 }

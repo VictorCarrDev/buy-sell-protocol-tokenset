@@ -6,6 +6,7 @@ require("dotenv").config();
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-ethers");
 require("hardhat-deploy");
+require("@nomiclabs/hardhat-web3");
 
 let mnemonic = process.env.MNEMONIC
   ? process.env.MNEMONIC
