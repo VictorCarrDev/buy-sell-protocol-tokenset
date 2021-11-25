@@ -21,3 +21,4 @@ exports.currentTime = async () => {
 exports.toDays = (amt) => 60 * 60 * 24 * amt;
 
 exports.ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+exports.ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';

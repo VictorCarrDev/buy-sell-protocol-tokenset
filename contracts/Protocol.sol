@@ -115,7 +115,8 @@ contract Protocol is Referral {
     path[0] = address(fromTokenReal);
     path[1] = address(destToken);
 
-    fromTokenReal.safeApprove(address(router), (realAmt * 105) / 100);
+    console.log(realAmt , 'begore errir');
+    fromTokenReal.approve(address(router), (realAmt * 105) / 100);
 
     router.swapTokensForExactTokens(
       neededAmountOut,

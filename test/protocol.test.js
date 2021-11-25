@@ -7,7 +7,7 @@ const {
 const { solidity } = require("ethereum-waffle");
 const { expect } = chai;
 chai.use(solidity);
-const { fromWei, toWei, ZERO_ADDRESS } = require("../test/utils");
+const { fromWei, toWei, ZERO_ADDRESS, ETH_ADDRESS } = require("../test/utils");
 const {
   expectRevert
 } = require('@openzeppelin/test-helpers');
@@ -78,13 +78,26 @@ describe("Set Protocol", () => {
     protocol = await Protocol.deploy(setAddress, LEVEL_RATE, BONUS_RATE_MAP);
   });
 
-  it('should not allow to buy if amount is low',async () =>{
-    expectRevert( protocol
-    .connect(aliceSigner)
-    .buySetWithETH(toWei(TO_BUY), bob, {
-      value: toWei(1),
-    }),'not enough tokens to swap')
+  it('should not allow to buy if amount is low', async () => {
+    expectRevert(protocol
+      .connect(aliceSigner)
+      .buySetWithETH(toWei(TO_BUY), bob, {
+        value: toWei(1),
+      }), 'not enough tokens to swap')
 
+  })
+
+  it('i dont know what this will do', async () => {
+    amountIn = await protocol.costSetWithETH(toWei(TO_BUY));
+
+    const trans = await protocol
+      .connect(bobSigner)
+      .buySetWithETH(toWei(TO_BUY), '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', {
+        value: amountIn,
+      });
+
+    const balance = await setToken.balanceOf(bob);
+    expect(fromWei(balance)).equal(TO_BUY);
   })
 
   it("should buy 1 set Token using ETH", async function () {
@@ -105,8 +118,8 @@ describe("Set Protocol", () => {
       "the cost should be less than the amount in"
     );
     expect(await ethers.provider.getBalance(protocol.address)).to.be.equal(0);
-    
-    
+
+
     expect(await await weth.balanceOf(protocol.address)).to.be.equal(0);
     expect(await await wbtc.balanceOf(protocol.address)).to.be.equal(0);
 
@@ -123,7 +136,7 @@ describe("Set Protocol", () => {
 
   it("should get correct referrer rewards", async function () {
     const { referrer, reward, referredCount } = await protocol.accounts(bob);
-    expect(referrer).equal(ZERO_ADDRESS);
+    expect(referrer).equal(ETH_ADDRESS);
     expect(fromWei(reward)).equal(TO_BUY / 100); // 1% of 1 token
     expect(referredCount).equal(1);
   });
@@ -131,12 +144,12 @@ describe("Set Protocol", () => {
   it('it should allow to sell', async () => {
     const previousBalance = await ethers.provider.getBalance(alice);
 
-    
+
     await setToken.connect(aliceSigner).approve(protocol.address, toWei(TO_BUY))
-    
+
     const trans = await protocol
-    .connect(aliceSigner)
-    .SellSetForETH(toWei(TO_BUY));
+      .connect(aliceSigner)
+      .SellSetForETH(toWei(TO_BUY));
 
     const afterBalance = await ethers.provider.getBalance(alice);
 
