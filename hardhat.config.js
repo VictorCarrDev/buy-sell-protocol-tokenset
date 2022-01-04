@@ -18,14 +18,16 @@ module.exports = {
       // Uncomment these lines to use mainnet fork
       forking: {
         url: `https://polygon-mainnet.g.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 19433012,
+        blockNumber: 22860017,
       },
     },
     polygon: {
-      url: `https://polygon-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts: {
-        mnemonic,
-      },
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      chainId: 137,
+      accounts:[`${process.env.PRIVATE_KEY}`,]
+      // accounts: {
+      //   mnemonic,
+      // },
     },
   },
   etherscan: {

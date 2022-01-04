@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import { ISetToken, IBasicIssuanceModule, ISetValuer } from "./interfaces/ITokenSets.sol";
+import { ISetToken, IBasicIssuanceModule } from "./interfaces/ITokenSets.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IUniswapV2Router02 } from "./interfaces/IUniswapV2Router.sol";
@@ -29,11 +29,9 @@ contract Protocol is Referral {
 
   address constant ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
   address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-  address constant USDC_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
 
   IBasicIssuanceModule basicModule =
     IBasicIssuanceModule(0x38E5462BBE6A72F79606c1A0007468aA4334A92b);
-  ISetValuer setValuer = ISetValuer(0x3700414Bb6716FcD8B14344fb10DDd91FdEA59eC);
 
   constructor(
     address _setToken,
@@ -57,8 +55,6 @@ contract Protocol is Referral {
       require(addReferrer(_referrer));
     }
     _;
-    // uint price = setValuer.calculateSetTokenValuation(setToken, USDC_ADDRESS);
-    // payReferral(amount.mul(price));
     payReferral(amount);
   }
 
